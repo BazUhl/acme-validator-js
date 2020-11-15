@@ -1,0 +1,13 @@
+{
+    "name": "acmevalidator-js",
+    "description": "javascript implementation of dotnet acmevalidator",
+    "main": "acmevalidator.js",
+    "version": "1.0.1",
+    "license": "Apache 2",
+    "scripts": {
+        "test": "mocha"
+    },
+    "devDependencies": {
+        "mocha": "^8.2.1"
+    }
+}

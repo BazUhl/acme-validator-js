@@ -1,51 +1,64 @@
-const Validate = (input, rules, callback) => {    
+const validate = (input, rules, callback, delta) => {
     try {
         if (!rules) { throw ("No rules defined") }
-        var _rules = JSON.parse(JSON.stringify(rules));
 
-        if (Array.isArray(_rules)) {
-            var arraymatch = false;
-            var promises = new Array;
-            _rules.forEach(option => {
-                promises.push(new Promise(function (resolve) {
+        if (Array.isArray(rules)) {
+            var promises = [];
+            rules.forEach(option => {
+                promises.push(new Promise((resolve) => {
                     resolve(input == option);
                 }))
             });
             Promise.all(promises).then(
-                function (arraymatch) {
-                    callback(null, arraymatch.some(val => { return val }));
+                (arraymatch) => {
+                    callback(null, arraymatch.some(val => { return val; }));
                 }
             ).catch(function (err) {
-                    callback(err, null);
-                })
+                callback(err, null);
+            })
         }
-        else if (_rules.constructor === Object) {
-            var promises = new Array();
-            Object.keys(_rules).forEach(key => {
-                promises.push(new Promise(function (resolve, reject) {
-                    if (!input[key]){resolve(false)}
-                    Validate(input[key], rules[key], (err, childmatch) => {
-                        if (err) {
-                            reject(err);
-                        }
-                        else { resolve(childmatch) }
-                    })
+        else if (rules.constructor === Object) {
+            var promises = [];
+            Object.keys(rules).forEach(key => {
+                promises.push(new Promise((resolve, reject) => {
+                    if (!input[key] === undefined) {
+                        resolve(false);
+                    }
+
+                    var negate = rules[key]['!'] == undefined ? false : true; // is it negation token
+                    validateToken(input[key], (negate ? rules[key]['!'] : rules[key]), negate, resolve, reject);
                 }))
             });
-            Promise.all(promises).then(function (childmatch) {
-                callback(null, childmatch.every(val => { return val }));
+
+            Promise.all(promises).then((childmatch) => {
+                callback(null, childmatch.every(val => { return val; }));
             }).catch(function (err) {
                 callback(err, null);
             })
         }
         else {
-            callback(null, input == rules);
-        }
+            var match = rules == input
+            || (rules == '$required' && input !== null)
+            || (rules == '$requiredOrNull' && input !== undefined);
 
+            callback(null, match);
+        }
 
     } catch (exception) {
         callback(exception, null);
     }
 }
-module.exports = Validate;
+
+// variable scoping
+function validateToken(input, rule, negate, resolve, reject) {
+    validate(input, rule, (err, childmatch) => {
+        if (err) {
+            reject(err);
+        } else {
+            resolve(negate ? !childmatch : childmatch);
+        }
+    });
+}
+
+module.exports = validate;
 
